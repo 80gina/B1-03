@@ -100,8 +100,9 @@ Google Forms(미션 인증) + Google Sheets(레벨 현황) + Gmail/카카오톡 
 **1단계 — 콘텐츠 및 데이터 구조 준비**
 
 - [ ] 레벨 1~5 미션 내용, 통과 기준(사진 필수 여부 등) 확정
-- [ ] Google Sheets에 "레벨업트래커" 탭 업로드 (제가 드린 xlsx 그대로 사용)
-- [ ] 참가 신청 폼 + 레벨별 미션 인증 폼(레벨번호 필드 포함) 제작
+- [ ] Google Sheets에 "[레벨업트래커](https://docs.google.com/spreadsheets/d/1-80lPgTNkbIg3CZkRVtp_WkyCOR0O52YI3coC7pH1QU/edit?usp=drive_link)" 탭 업로드 (제가 드린 xlsx 그대로 사용)
+- [ ] [참가 신청 폼](https://docs.google.com/spreadsheets/d/1-80lPgTNkbIg3CZkRVtp_WkyCOR0O52YI3coC7pH1QU/edit?usp=drive_link) + [레벨별 미션 인증 폼](https://docs.google.com/forms/d/e/1FAIpQLSfIZjsnyKoXfJ-SDrj-mtCZUSrJrplve5__WZ5dVrzfRTyzXA/viewform?usp=publish-editor) (레벨번호 필드 포함) 제작
+
 
 **2단계 — Trigger 설정**
 
