@@ -1,0 +1,290 @@
+{
+  "name": "SCN-03_5일미제출_Discord리마인드",
+  "flow": [
+    {
+      "id": 1,
+      "module": "google-sheets:searchRows",
+      "version": 2,
+      "parameters": {
+        "__IMTCONN__": 0,
+        "mode": "select",
+        "from": "drive",
+        "spreadsheetId": "/__SPREADSHEET_ID_FROM_CONFIG__",
+        "sheetId": "__SHEET_ID_TRACKER__",
+        "includesHeaders": true,
+        "tableFirstRow": "A1:AZ1",
+        "valueRenderOption": "FORMATTED_VALUE",
+        "dateTimeRenderOption": "FORMATTED_STRING"
+      },
+      "mapper": {
+        "filter": [
+          [
+            {
+              "a": "Z",
+              "b": "완료",
+              "o": "text:notequal"
+            }
+          ]
+        ],
+        "sortOrder": "asc",
+        "orderBy": "AB",
+        "limit": 500
+      },
+      "metadata": {
+        "designer": {
+          "x": 0,
+          "y": 0,
+          "name": "진행중 트래커 행 검색"
+        },
+        "notes": "가져오기 후 레벨업트래커 탭과 Z=전체완료여부, AB=다음리마인드예정일시 열을 UI에서 재선택하세요."
+      }
+    },
+    {
+      "id": 2,
+      "module": "http:ActionSendData",
+      "version": 3,
+      "parameters": {
+        "handleErrors": true,
+        "useNewZLibDeCompress": true
+      },
+      "mapper": {
+        "url": "__DISCORD_WEBHOOK_URL__?wait=true",
+        "serializeUrl": false,
+        "method": "post",
+        "headers": [],
+        "qs": [],
+        "bodyType": "raw",
+        "contentType": "application/json",
+        "data": "{\"username\":\"냉장고 퀘스트 상태창\",\"allowed_mentions\":{\"parse\":[]},\"embeds\":[{\"title\":\"[QUEST REMINDER] Lv.{{1.`8`}} 퀘스트가 기다리고 있어요\",\"description\":\"**현재 상태** Lv.{{1.`8`}} {{1.`9`}} · 진행중\\\\n**현재 퀘스트** {{switch(1.`8`; 1; \\\"냉장고 속 재료 3가지로 요리 1개 완성\\\"; 2; \\\"자취요리를 나만의 방식으로 업그레이드\\\"; 3; \\\"메인요리와 반찬 2개 이상으로 한 상 차리기\\\"; 4; \\\"기존 레시피를 응용한 창작 요리\\\"; 5; \\\"인생 한 끼 완성\\\"; \\\"현재 퀘스트\\\")}}\\\\n**퀘스트 이어하기** __MISSION_FORM_PREFILL_BASE_URL__\\\\n\\\\n🌿 “거창하지 않아도 괜찮다. 오늘 한 숟갈부터 다시 시작해 보자.”\",\"color\":13210430,\"fields\":[{\"name\":\"플레이어\",\"value\":\"{{1.`3`}}\",\"inline\":true},{\"name\":\"참가자ID\",\"value\":\"{{1.`0`}}\",\"inline\":true}],\"footer\":{\"text\":\"냉장고 파먹기 레벨업 챌린지 · 상태창 70% + 할머니 손맛 30%\"}}]}",
+        "parseResponse": true,
+        "authUser": "",
+        "authPass": "",
+        "timeout": "40",
+        "shareCookies": false,
+        "ca": "",
+        "rejectUnauthorized": true,
+        "followRedirect": true,
+        "useQuerystring": false,
+        "gzip": true,
+        "useMtls": false,
+        "followAllRedirects": false
+      },
+      "metadata": {
+        "designer": {
+          "x": 350,
+          "y": 0,
+          "name": "Discord 5일 리마인드"
+        },
+        "notes": "Discord Incoming Webhook JSON Embed. allowed_mentions.parse=[] 유지. Webhook URL은 배포 전 안전하게 주입하세요."
+      },
+      "filter": {
+        "name": "5일 리마인드 조건: 진행중 + 예정일 도래 + 미발송",
+        "conditions": [
+          [
+            {
+              "a": "{{1.`25`}}",
+              "o": "text:notequal",
+              "b": "완료"
+            },
+            {
+              "a": "{{1.`27`}}",
+              "o": "datetime:lessorequal",
+              "b": "{{now}}"
+            },
+            {
+              "a": "{{1.`28`}}",
+              "o": "text:equal",
+              "b": "N"
+            },
+            {
+              "a": "{{1.`8`}}",
+              "o": "number:equal",
+              "b": 1
+            },
+            {
+              "a": "{{1.`10`}}",
+              "o": "text:equal",
+              "b": "진행중"
+            }
+          ],
+          [
+            {
+              "a": "{{1.`25`}}",
+              "o": "text:notequal",
+              "b": "완료"
+            },
+            {
+              "a": "{{1.`27`}}",
+              "o": "datetime:lessorequal",
+              "b": "{{now}}"
+            },
+            {
+              "a": "{{1.`28`}}",
+              "o": "text:equal",
+              "b": "N"
+            },
+            {
+              "a": "{{1.`8`}}",
+              "o": "number:equal",
+              "b": 2
+            },
+            {
+              "a": "{{1.`13`}}",
+              "o": "text:equal",
+              "b": "진행중"
+            }
+          ],
+          [
+            {
+              "a": "{{1.`25`}}",
+              "o": "text:notequal",
+              "b": "완료"
+            },
+            {
+              "a": "{{1.`27`}}",
+              "o": "datetime:lessorequal",
+              "b": "{{now}}"
+            },
+            {
+              "a": "{{1.`28`}}",
+              "o": "text:equal",
+              "b": "N"
+            },
+            {
+              "a": "{{1.`8`}}",
+              "o": "number:equal",
+              "b": 3
+            },
+            {
+              "a": "{{1.`16`}}",
+              "o": "text:equal",
+              "b": "진행중"
+            }
+          ],
+          [
+            {
+              "a": "{{1.`25`}}",
+              "o": "text:notequal",
+              "b": "완료"
+            },
+            {
+              "a": "{{1.`27`}}",
+              "o": "datetime:lessorequal",
+              "b": "{{now}}"
+            },
+            {
+              "a": "{{1.`28`}}",
+              "o": "text:equal",
+              "b": "N"
+            },
+            {
+              "a": "{{1.`8`}}",
+              "o": "number:equal",
+              "b": 4
+            },
+            {
+              "a": "{{1.`19`}}",
+              "o": "text:equal",
+              "b": "진행중"
+            }
+          ],
+          [
+            {
+              "a": "{{1.`25`}}",
+              "o": "text:notequal",
+              "b": "완료"
+            },
+            {
+              "a": "{{1.`27`}}",
+              "o": "datetime:lessorequal",
+              "b": "{{now}}"
+            },
+            {
+              "a": "{{1.`28`}}",
+              "o": "text:equal",
+              "b": "N"
+            },
+            {
+              "a": "{{1.`8`}}",
+              "o": "number:equal",
+              "b": 5
+            },
+            {
+              "a": "{{1.`22`}}",
+              "o": "text:equal",
+              "b": "진행중"
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "id": 3,
+      "module": "google-sheets:updateRow",
+      "version": 2,
+      "parameters": {
+        "__IMTCONN__": 0,
+        "mode": "select",
+        "from": "drive",
+        "spreadsheetId": "/__SPREADSHEET_ID_FROM_CONFIG__",
+        "sheetId": "__SHEET_ID_TRACKER__",
+        "includesHeaders": true,
+        "tableFirstRow": "A1:AZ1",
+        "valueRenderOption": "FORMATTED_VALUE",
+        "dateTimeRenderOption": "FORMATTED_STRING"
+      },
+      "mapper": {
+        "rowNumber": "{{1.`__ROW_NUMBER__`}}",
+        "values": {
+          "28": "Y",
+          "29": "{{now}}",
+          "30": "EVT-{{formatDate(now; \"YYYYMMDDHHmmss\"; \"Asia/Seoul\")}}-{{1.`0`}}-REMIND",
+          "36": "성공"
+        },
+        "valueInputOption": "USER_ENTERED"
+      },
+      "metadata": {
+        "designer": {
+          "x": 700,
+          "y": 0,
+          "name": "Discord 리마인드 상태 갱신"
+        },
+        "notes": "Discord 2xx 성공 후 현재레벨리마인드발송여부/일시와 Discord최근발송상태를 갱신합니다."
+      }
+    }
+  ],
+  "metadata": {
+    "instant": false,
+    "version": 1,
+    "scenario": {
+      "roundtrips": 1,
+      "maxErrors": 3,
+      "autoCommit": true,
+      "autoCommitTriggerLast": true,
+      "sequential": true,
+      "slots": 1,
+      "confidential": false,
+      "dataloss": false,
+      "dlq": false,
+      "freshVariables": false
+    },
+    "designer": {
+      "orphans": []
+    },
+    "zone": "eu2.make.com",
+    "notes": [
+      "매일 09:00 Asia/Seoul 실행 골격이며 기본 OFF입니다.",
+      "진행중 + 예정일 도래 + 같은 레벨 미발송 조건을 만족한 행만 Discord JSON Embed로 알립니다.",
+      "공개 참가자 식별 정보는 챌린지닉네임과 참가자ID만 사용하고 allowed_mentions.parse=[]로 멘션을 차단합니다.",
+      "다음 레벨 개방 시 SCN-02가 리마인드 필드를 N/빈값으로 초기화합니다."
+    ],
+    "assemblyBlueprint": true,
+    "requiredPostImportAction": "Google Sheets 열/필터를 다시 매핑하고 __DISCORD_WEBHOOK_URL__을 안전 주입한 뒤 Run once 검증"
+  },
+  "scheduling": {
+    "type": "daily",
+    "time": "09:00",
+    "timezone": "Asia/Seoul",
+    "enabled": false
+  }
+}

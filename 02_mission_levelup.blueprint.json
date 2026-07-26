@@ -1,0 +1,1929 @@
+{
+  "name": "SCN-02_미션인증_검증_Discord레벨업_인증서",
+  "flow": [
+    {
+      "id": 1,
+      "module": "google-sheets:watchRows",
+      "version": 2,
+      "parameters": {
+        "__IMTCONN__": 0,
+        "mode": "select",
+        "from": "drive",
+        "spreadsheetId": "/__SPREADSHEET_ID_FROM_CONFIG__",
+        "sheetId": "__SHEET_ID_MISSION_RESPONSE__",
+        "includesHeaders": true,
+        "tableFirstRow": "A1:AZ1",
+        "valueRenderOption": "FORMATTED_VALUE",
+        "dateTimeRenderOption": "FORMATTED_STRING",
+        "limit": 1
+      },
+      "mapper": {},
+      "metadata": {
+        "designer": {
+          "x": 0,
+          "y": 0,
+          "name": "미션인증_응답 신규 행"
+        },
+        "notes": "가져오기 후 Google 연결, 운영 DB, 응답 탭을 다시 선택하고 동적 열을 새로 로드하세요."
+      }
+    },
+    {
+      "id": 2,
+      "module": "google-sheets:searchRows",
+      "version": 2,
+      "parameters": {
+        "__IMTCONN__": 0,
+        "mode": "select",
+        "from": "drive",
+        "spreadsheetId": "/__SPREADSHEET_ID_FROM_CONFIG__",
+        "sheetId": "__SHEET_ID_TRACKER__",
+        "includesHeaders": true,
+        "tableFirstRow": "A1:AZ1",
+        "valueRenderOption": "FORMATTED_VALUE",
+        "dateTimeRenderOption": "FORMATTED_STRING"
+      },
+      "mapper": {
+        "filter": [
+          [
+            {
+              "a": "A",
+              "b": "{{1.`2`}}",
+              "o": "text:equal"
+            }
+          ]
+        ],
+        "sortOrder": "asc",
+        "orderBy": "__ROW_NUMBER__",
+        "limit": 1
+      },
+      "metadata": {
+        "designer": {
+          "x": 300,
+          "y": 0,
+          "name": "참가자ID로 트래커 검색"
+        },
+        "notes": "Search Rows 모듈을 열어 열 목록을 새로 로드하고, 필터 열/연산자를 UI에서 재선택하세요. 0건일 때도 빈 번들로 계속 진행(continue/empty result)하도록 설정해야 신규/미확인 경로가 실행됩니다."
+      }
+    },
+    {
+      "id": 3,
+      "module": "builtin:BasicRouter",
+      "version": 1,
+      "parameters": {},
+      "mapper": {},
+      "metadata": {
+        "designer": {
+          "x": 600,
+          "y": 0,
+          "name": "검증 오류 + Lv.1~Lv.5 Router"
+        },
+        "notes": "Router 경로는 상호 배타적으로 설계했지만, 가져오기 후 각 필터를 열어 연산자와 매핑 토큰을 확인하세요."
+      },
+      "routes": [
+        {
+          "flow": [
+            {
+              "id": 10,
+              "module": "http:ActionSendData",
+              "version": 3,
+              "parameters": {
+                "handleErrors": true,
+                "useNewZLibDeCompress": true
+              },
+              "mapper": {
+                "url": "__DISCORD_WEBHOOK_URL__?wait=true",
+                "serializeUrl": false,
+                "method": "post",
+                "headers": [],
+                "qs": [],
+                "bodyType": "raw",
+                "contentType": "application/json",
+                "data": "{\"username\":\"냉장고 퀘스트 상태창\",\"allowed_mentions\":{\"parse\":[]},\"embeds\":[{\"title\":\"[ERROR] 참가자 정보를 확인해 주세요\",\"description\":\"제출한 참가자ID를 트래커에서 찾지 못했습니다. 참가 신청을 먼저 완료해 주세요.\",\"color\":12082232,\"fields\":[{\"name\":\"플레이어\",\"value\":\"미확인\",\"inline\":true},{\"name\":\"참가자ID\",\"value\":\"{{1.`2`}}\",\"inline\":true}],\"footer\":{\"text\":\"냉장고 파먹기 레벨업 챌린지 · 상태창 70% + 할머니 손맛 30%\"}}]}",
+                "parseResponse": true,
+                "authUser": "",
+                "authPass": "",
+                "timeout": "40",
+                "shareCookies": false,
+                "ca": "",
+                "rejectUnauthorized": true,
+                "followRedirect": true,
+                "useQuerystring": false,
+                "gzip": true,
+                "useMtls": false,
+                "followAllRedirects": false
+              },
+              "metadata": {
+                "designer": {
+                  "x": 650,
+                  "y": -560,
+                  "name": "Discord 오류 안내: 참가자 미확인"
+                },
+                "notes": "Discord Incoming Webhook JSON Embed. allowed_mentions.parse=[] 유지. Webhook URL은 배포 전 안전하게 주입하세요."
+              },
+              "filter": {
+                "name": "오류: 참가자ID 미확인",
+                "conditions": [
+                  [
+                    {
+                      "a": "{{2.`__ROW_NUMBER__`}}",
+                      "o": "notexist"
+                    }
+                  ]
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "flow": [
+            {
+              "id": 11,
+              "module": "http:ActionSendData",
+              "version": 3,
+              "parameters": {
+                "handleErrors": true,
+                "useNewZLibDeCompress": true
+              },
+              "mapper": {
+                "url": "__DISCORD_WEBHOOK_URL__?wait=true",
+                "serializeUrl": false,
+                "method": "post",
+                "headers": [],
+                "qs": [],
+                "bodyType": "raw",
+                "contentType": "application/json",
+                "data": "{\"username\":\"냉장고 퀘스트 상태창\",\"allowed_mentions\":{\"parse\":[]},\"embeds\":[{\"title\":\"[ERROR] 참가자 정보가 일치하지 않습니다\",\"description\":\"참가자ID와 제출 정보가 일치하지 않습니다. 개인정보를 공개하지 말고 미션 Form에서 다시 확인해 주세요.\",\"color\":12082232,\"fields\":[{\"name\":\"플레이어\",\"value\":\"{{2.`3`}}\",\"inline\":true},{\"name\":\"참가자ID\",\"value\":\"{{2.`0`}}\",\"inline\":true}],\"footer\":{\"text\":\"냉장고 파먹기 레벨업 챌린지 · 상태창 70% + 할머니 손맛 30%\"}}]}",
+                "parseResponse": true,
+                "authUser": "",
+                "authPass": "",
+                "timeout": "40",
+                "shareCookies": false,
+                "ca": "",
+                "rejectUnauthorized": true,
+                "followRedirect": true,
+                "useQuerystring": false,
+                "gzip": true,
+                "useMtls": false,
+                "followAllRedirects": false
+              },
+              "metadata": {
+                "designer": {
+                  "x": 650,
+                  "y": -420,
+                  "name": "Discord 오류 안내: 이메일 불일치"
+                },
+                "notes": "Discord Incoming Webhook JSON Embed. allowed_mentions.parse=[] 유지. Webhook URL은 배포 전 안전하게 주입하세요."
+              },
+              "filter": {
+                "name": "오류: 참가자ID와 이메일 불일치",
+                "conditions": [
+                  [
+                    {
+                      "a": "{{2.`__ROW_NUMBER__`}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{lower(trim(1.`3`))}}",
+                      "o": "text:notequal",
+                      "b": "{{lower(trim(2.`4`))}}"
+                    }
+                  ]
+                ]
+              }
+            },
+            {
+              "id": 111,
+              "module": "google-sheets:updateRow",
+              "version": 2,
+              "parameters": {
+                "__IMTCONN__": 0,
+                "mode": "select",
+                "from": "drive",
+                "spreadsheetId": "/__SPREADSHEET_ID_FROM_CONFIG__",
+                "sheetId": "__SHEET_ID_TRACKER__",
+                "includesHeaders": true,
+                "tableFirstRow": "A1:AZ1",
+                "valueRenderOption": "FORMATTED_VALUE",
+                "dateTimeRenderOption": "FORMATTED_STRING"
+              },
+              "mapper": {
+                "rowNumber": "{{2.`__ROW_NUMBER__`}}",
+                "values": {
+                  "36": "성공"
+                },
+                "valueInputOption": "USER_ENTERED"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 950,
+                  "y": -420,
+                  "name": "오류/안내 Discord 상태 갱신"
+                },
+                "notes": "가져오기 후 레벨업트래커의 Discord최근발송상태(0-based index 36)와 행 번호를 UI에서 다시 선택하세요."
+              }
+            }
+          ]
+        },
+        {
+          "flow": [
+            {
+              "id": 12,
+              "module": "http:ActionSendData",
+              "version": 3,
+              "parameters": {
+                "handleErrors": true,
+                "useNewZLibDeCompress": true
+              },
+              "mapper": {
+                "url": "__DISCORD_WEBHOOK_URL__?wait=true",
+                "serializeUrl": false,
+                "method": "post",
+                "headers": [],
+                "qs": [],
+                "bodyType": "raw",
+                "contentType": "application/json",
+                "data": "{\"username\":\"냉장고 퀘스트 상태창\",\"allowed_mentions\":{\"parse\":[]},\"embeds\":[{\"title\":\"[ERROR] 인증 사진을 다시 첨부해 주세요\",\"description\":\"Lv.{{1.`1`}} 인증 사진이 확인되지 않았습니다. 사진과 필수 설명을 보완해 다시 제출해 주세요.\\\\n__MISSION_FORM_PREFILL_BASE_URL__\",\"color\":12082232,\"fields\":[{\"name\":\"플레이어\",\"value\":\"{{2.`3`}}\",\"inline\":true},{\"name\":\"참가자ID\",\"value\":\"{{2.`0`}}\",\"inline\":true}],\"footer\":{\"text\":\"냉장고 파먹기 레벨업 챌린지 · 상태창 70% + 할머니 손맛 30%\"}}]}",
+                "parseResponse": true,
+                "authUser": "",
+                "authPass": "",
+                "timeout": "40",
+                "shareCookies": false,
+                "ca": "",
+                "rejectUnauthorized": true,
+                "followRedirect": true,
+                "useQuerystring": false,
+                "gzip": true,
+                "useMtls": false,
+                "followAllRedirects": false
+              },
+              "metadata": {
+                "designer": {
+                  "x": 650,
+                  "y": -280,
+                  "name": "Discord 오류 안내: 사진 누락"
+                },
+                "notes": "Discord Incoming Webhook JSON Embed. allowed_mentions.parse=[] 유지. Webhook URL은 배포 전 안전하게 주입하세요."
+              },
+              "filter": {
+                "name": "오류: 인증 사진 누락",
+                "conditions": [
+                  [
+                    {
+                      "a": "{{2.`__ROW_NUMBER__`}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{lower(trim(1.`3`))}}",
+                      "o": "text:equal",
+                      "b": "{{lower(trim(2.`4`))}}"
+                    },
+                    {
+                      "a": "{{trim(1.`4`)}}",
+                      "o": "notexist"
+                    }
+                  ]
+                ]
+              }
+            },
+            {
+              "id": 112,
+              "module": "google-sheets:updateRow",
+              "version": 2,
+              "parameters": {
+                "__IMTCONN__": 0,
+                "mode": "select",
+                "from": "drive",
+                "spreadsheetId": "/__SPREADSHEET_ID_FROM_CONFIG__",
+                "sheetId": "__SHEET_ID_TRACKER__",
+                "includesHeaders": true,
+                "tableFirstRow": "A1:AZ1",
+                "valueRenderOption": "FORMATTED_VALUE",
+                "dateTimeRenderOption": "FORMATTED_STRING"
+              },
+              "mapper": {
+                "rowNumber": "{{2.`__ROW_NUMBER__`}}",
+                "values": {
+                  "36": "성공"
+                },
+                "valueInputOption": "USER_ENTERED"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 950,
+                  "y": -280,
+                  "name": "오류/안내 Discord 상태 갱신"
+                },
+                "notes": "가져오기 후 레벨업트래커의 Discord최근발송상태(0-based index 36)와 행 번호를 UI에서 다시 선택하세요."
+              }
+            }
+          ]
+        },
+        {
+          "flow": [
+            {
+              "id": 13,
+              "module": "http:ActionSendData",
+              "version": 3,
+              "parameters": {
+                "handleErrors": true,
+                "useNewZLibDeCompress": true
+              },
+              "mapper": {
+                "url": "__DISCORD_WEBHOOK_URL__?wait=true",
+                "serializeUrl": false,
+                "method": "post",
+                "headers": [],
+                "qs": [],
+                "bodyType": "raw",
+                "contentType": "application/json",
+                "data": "{\"username\":\"냉장고 퀘스트 상태창\",\"allowed_mentions\":{\"parse\":[]},\"embeds\":[{\"title\":\"[ERROR] 현재 진행 레벨을 확인해 주세요\",\"description\":\"제출: {{1.`1`}} / 현재 진행: Lv.{{2.`8`}}\\\\n현재 진행중인 레벨부터 인증해 주세요.\",\"color\":12082232,\"fields\":[{\"name\":\"플레이어\",\"value\":\"{{2.`3`}}\",\"inline\":true},{\"name\":\"참가자ID\",\"value\":\"{{2.`0`}}\",\"inline\":true}],\"footer\":{\"text\":\"냉장고 파먹기 레벨업 챌린지 · 상태창 70% + 할머니 손맛 30%\"}}]}",
+                "parseResponse": true,
+                "authUser": "",
+                "authPass": "",
+                "timeout": "40",
+                "shareCookies": false,
+                "ca": "",
+                "rejectUnauthorized": true,
+                "followRedirect": true,
+                "useQuerystring": false,
+                "gzip": true,
+                "useMtls": false,
+                "followAllRedirects": false
+              },
+              "metadata": {
+                "designer": {
+                  "x": 650,
+                  "y": -140,
+                  "name": "Discord 오류 안내: 순서 오류"
+                },
+                "notes": "Discord Incoming Webhook JSON Embed. allowed_mentions.parse=[] 유지. Webhook URL은 배포 전 안전하게 주입하세요."
+              },
+              "filter": {
+                "name": "오류: 제출 레벨과 현재 레벨 불일치",
+                "conditions": [
+                  [
+                    {
+                      "a": "{{2.`__ROW_NUMBER__`}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{lower(trim(1.`3`))}}",
+                      "o": "text:equal",
+                      "b": "{{lower(trim(2.`4`))}}"
+                    },
+                    {
+                      "a": "{{trim(1.`4`)}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{1.`1`}}",
+                      "o": "text:equal",
+                      "b": "Lv.1"
+                    },
+                    {
+                      "a": "{{2.`8`}}",
+                      "o": "number:notequal",
+                      "b": 1
+                    },
+                    {
+                      "a": "{{2.`10`}}",
+                      "o": "text:notequal",
+                      "b": "완료"
+                    }
+                  ],
+                  [
+                    {
+                      "a": "{{2.`__ROW_NUMBER__`}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{lower(trim(1.`3`))}}",
+                      "o": "text:equal",
+                      "b": "{{lower(trim(2.`4`))}}"
+                    },
+                    {
+                      "a": "{{trim(1.`4`)}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{1.`1`}}",
+                      "o": "text:equal",
+                      "b": "Lv.2"
+                    },
+                    {
+                      "a": "{{2.`8`}}",
+                      "o": "number:notequal",
+                      "b": 2
+                    },
+                    {
+                      "a": "{{2.`13`}}",
+                      "o": "text:notequal",
+                      "b": "완료"
+                    }
+                  ],
+                  [
+                    {
+                      "a": "{{2.`__ROW_NUMBER__`}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{lower(trim(1.`3`))}}",
+                      "o": "text:equal",
+                      "b": "{{lower(trim(2.`4`))}}"
+                    },
+                    {
+                      "a": "{{trim(1.`4`)}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{1.`1`}}",
+                      "o": "text:equal",
+                      "b": "Lv.3"
+                    },
+                    {
+                      "a": "{{2.`8`}}",
+                      "o": "number:notequal",
+                      "b": 3
+                    },
+                    {
+                      "a": "{{2.`16`}}",
+                      "o": "text:notequal",
+                      "b": "완료"
+                    }
+                  ],
+                  [
+                    {
+                      "a": "{{2.`__ROW_NUMBER__`}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{lower(trim(1.`3`))}}",
+                      "o": "text:equal",
+                      "b": "{{lower(trim(2.`4`))}}"
+                    },
+                    {
+                      "a": "{{trim(1.`4`)}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{1.`1`}}",
+                      "o": "text:equal",
+                      "b": "Lv.4"
+                    },
+                    {
+                      "a": "{{2.`8`}}",
+                      "o": "number:notequal",
+                      "b": 4
+                    },
+                    {
+                      "a": "{{2.`19`}}",
+                      "o": "text:notequal",
+                      "b": "완료"
+                    }
+                  ],
+                  [
+                    {
+                      "a": "{{2.`__ROW_NUMBER__`}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{lower(trim(1.`3`))}}",
+                      "o": "text:equal",
+                      "b": "{{lower(trim(2.`4`))}}"
+                    },
+                    {
+                      "a": "{{trim(1.`4`)}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{1.`1`}}",
+                      "o": "text:equal",
+                      "b": "Lv.5"
+                    },
+                    {
+                      "a": "{{2.`8`}}",
+                      "o": "number:notequal",
+                      "b": 5
+                    },
+                    {
+                      "a": "{{2.`22`}}",
+                      "o": "text:notequal",
+                      "b": "완료"
+                    }
+                  ]
+                ]
+              }
+            },
+            {
+              "id": 113,
+              "module": "google-sheets:updateRow",
+              "version": 2,
+              "parameters": {
+                "__IMTCONN__": 0,
+                "mode": "select",
+                "from": "drive",
+                "spreadsheetId": "/__SPREADSHEET_ID_FROM_CONFIG__",
+                "sheetId": "__SHEET_ID_TRACKER__",
+                "includesHeaders": true,
+                "tableFirstRow": "A1:AZ1",
+                "valueRenderOption": "FORMATTED_VALUE",
+                "dateTimeRenderOption": "FORMATTED_STRING"
+              },
+              "mapper": {
+                "rowNumber": "{{2.`__ROW_NUMBER__`}}",
+                "values": {
+                  "36": "성공"
+                },
+                "valueInputOption": "USER_ENTERED"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 950,
+                  "y": -140,
+                  "name": "오류/안내 Discord 상태 갱신"
+                },
+                "notes": "가져오기 후 레벨업트래커의 Discord최근발송상태(0-based index 36)와 행 번호를 UI에서 다시 선택하세요."
+              }
+            }
+          ]
+        },
+        {
+          "flow": [
+            {
+              "id": 14,
+              "module": "http:ActionSendData",
+              "version": 3,
+              "parameters": {
+                "handleErrors": true,
+                "useNewZLibDeCompress": true
+              },
+              "mapper": {
+                "url": "__DISCORD_WEBHOOK_URL__?wait=true",
+                "serializeUrl": false,
+                "method": "post",
+                "headers": [],
+                "qs": [],
+                "bodyType": "raw",
+                "contentType": "application/json",
+                "data": "{\"username\":\"냉장고 퀘스트 상태창\",\"allowed_mentions\":{\"parse\":[]},\"embeds\":[{\"title\":\"[NOTICE] 이미 완료된 퀘스트입니다\",\"description\":\"{{1.`1`}} 완료 기록은 안전하게 보관되어 있으며 중복 처리하지 않았습니다.\\\\n현재 상태: Lv.{{2.`8`}} {{2.`9`}}\",\"color\":12082232,\"fields\":[{\"name\":\"플레이어\",\"value\":\"{{2.`3`}}\",\"inline\":true},{\"name\":\"참가자ID\",\"value\":\"{{2.`0`}}\",\"inline\":true}],\"footer\":{\"text\":\"냉장고 파먹기 레벨업 챌린지 · 상태창 70% + 할머니 손맛 30%\"}}]}",
+                "parseResponse": true,
+                "authUser": "",
+                "authPass": "",
+                "timeout": "40",
+                "shareCookies": false,
+                "ca": "",
+                "rejectUnauthorized": true,
+                "followRedirect": true,
+                "useQuerystring": false,
+                "gzip": true,
+                "useMtls": false,
+                "followAllRedirects": false
+              },
+              "metadata": {
+                "designer": {
+                  "x": 650,
+                  "y": 0,
+                  "name": "Discord 오류 안내: 중복 제출"
+                },
+                "notes": "Discord Incoming Webhook JSON Embed. allowed_mentions.parse=[] 유지. Webhook URL은 배포 전 안전하게 주입하세요."
+              },
+              "filter": {
+                "name": "오류: 이미 완료된 레벨 중복 제출",
+                "conditions": [
+                  [
+                    {
+                      "a": "{{2.`__ROW_NUMBER__`}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{lower(trim(1.`3`))}}",
+                      "o": "text:equal",
+                      "b": "{{lower(trim(2.`4`))}}"
+                    },
+                    {
+                      "a": "{{trim(1.`4`)}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{1.`1`}}",
+                      "o": "text:equal",
+                      "b": "Lv.1"
+                    },
+                    {
+                      "a": "{{2.`8`}}",
+                      "o": "number:equal",
+                      "b": 1
+                    },
+                    {
+                      "a": "{{2.`10`}}",
+                      "o": "text:equal",
+                      "b": "완료"
+                    }
+                  ],
+                  [
+                    {
+                      "a": "{{2.`__ROW_NUMBER__`}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{lower(trim(1.`3`))}}",
+                      "o": "text:equal",
+                      "b": "{{lower(trim(2.`4`))}}"
+                    },
+                    {
+                      "a": "{{trim(1.`4`)}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{1.`1`}}",
+                      "o": "text:equal",
+                      "b": "Lv.2"
+                    },
+                    {
+                      "a": "{{2.`8`}}",
+                      "o": "number:equal",
+                      "b": 2
+                    },
+                    {
+                      "a": "{{2.`13`}}",
+                      "o": "text:equal",
+                      "b": "완료"
+                    }
+                  ],
+                  [
+                    {
+                      "a": "{{2.`__ROW_NUMBER__`}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{lower(trim(1.`3`))}}",
+                      "o": "text:equal",
+                      "b": "{{lower(trim(2.`4`))}}"
+                    },
+                    {
+                      "a": "{{trim(1.`4`)}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{1.`1`}}",
+                      "o": "text:equal",
+                      "b": "Lv.3"
+                    },
+                    {
+                      "a": "{{2.`8`}}",
+                      "o": "number:equal",
+                      "b": 3
+                    },
+                    {
+                      "a": "{{2.`16`}}",
+                      "o": "text:equal",
+                      "b": "완료"
+                    }
+                  ],
+                  [
+                    {
+                      "a": "{{2.`__ROW_NUMBER__`}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{lower(trim(1.`3`))}}",
+                      "o": "text:equal",
+                      "b": "{{lower(trim(2.`4`))}}"
+                    },
+                    {
+                      "a": "{{trim(1.`4`)}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{1.`1`}}",
+                      "o": "text:equal",
+                      "b": "Lv.4"
+                    },
+                    {
+                      "a": "{{2.`8`}}",
+                      "o": "number:equal",
+                      "b": 4
+                    },
+                    {
+                      "a": "{{2.`19`}}",
+                      "o": "text:equal",
+                      "b": "완료"
+                    }
+                  ],
+                  [
+                    {
+                      "a": "{{2.`__ROW_NUMBER__`}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{lower(trim(1.`3`))}}",
+                      "o": "text:equal",
+                      "b": "{{lower(trim(2.`4`))}}"
+                    },
+                    {
+                      "a": "{{trim(1.`4`)}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{1.`1`}}",
+                      "o": "text:equal",
+                      "b": "Lv.5"
+                    },
+                    {
+                      "a": "{{2.`8`}}",
+                      "o": "number:equal",
+                      "b": 5
+                    },
+                    {
+                      "a": "{{2.`22`}}",
+                      "o": "text:equal",
+                      "b": "완료"
+                    }
+                  ]
+                ]
+              }
+            },
+            {
+              "id": 114,
+              "module": "google-sheets:updateRow",
+              "version": 2,
+              "parameters": {
+                "__IMTCONN__": 0,
+                "mode": "select",
+                "from": "drive",
+                "spreadsheetId": "/__SPREADSHEET_ID_FROM_CONFIG__",
+                "sheetId": "__SHEET_ID_TRACKER__",
+                "includesHeaders": true,
+                "tableFirstRow": "A1:AZ1",
+                "valueRenderOption": "FORMATTED_VALUE",
+                "dateTimeRenderOption": "FORMATTED_STRING"
+              },
+              "mapper": {
+                "rowNumber": "{{2.`__ROW_NUMBER__`}}",
+                "values": {
+                  "36": "성공"
+                },
+                "valueInputOption": "USER_ENTERED"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 950,
+                  "y": 0,
+                  "name": "오류/안내 Discord 상태 갱신"
+                },
+                "notes": "가져오기 후 레벨업트래커의 Discord최근발송상태(0-based index 36)와 행 번호를 UI에서 다시 선택하세요."
+              }
+            }
+          ]
+        },
+        {
+          "flow": [
+            {
+              "id": 23,
+              "module": "google-sheets:updateRow",
+              "version": 2,
+              "parameters": {
+                "__IMTCONN__": 0,
+                "mode": "select",
+                "from": "drive",
+                "spreadsheetId": "/__SPREADSHEET_ID_FROM_CONFIG__",
+                "sheetId": "__SHEET_ID_TRACKER__",
+                "includesHeaders": true,
+                "tableFirstRow": "A1:AZ1",
+                "valueRenderOption": "FORMATTED_VALUE",
+                "dateTimeRenderOption": "FORMATTED_STRING"
+              },
+              "mapper": {
+                "rowNumber": "{{2.`__ROW_NUMBER__`}}",
+                "values": {
+                  "10": "완료",
+                  "11": "{{now}}",
+                  "12": "SUB-{{1.`2`}}-L1-{{1.`__ROW_NUMBER__`}}",
+                  "28": "N",
+                  "29": "",
+                  "30": "EVT-{{formatDate(now; \"YYYYMMDDHHmmss\"; \"Asia/Seoul\")}}-{{1.`2`}}-PASS_L1",
+                  "37": "건너뜀",
+                  "8": "2",
+                  "9": "살림 9단",
+                  "13": "진행중",
+                  "36": "대기"
+                },
+                "valueInputOption": "USER_ENTERED"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 650,
+                  "y": 310,
+                  "name": "Lv.1 완료 및 트래커 갱신"
+                },
+                "notes": "가져오기 후 레벨업트래커 탭과 행 번호, 갱신 열을 UI에서 다시 선택하세요. 지정하지 않은 열은 보존되는지 Run once로 확인하세요."
+              },
+              "filter": {
+                "name": "통과: Lv.1 공통/필수값 검증 완료",
+                "conditions": [
+                  [
+                    {
+                      "a": "{{2.`__ROW_NUMBER__`}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{lower(trim(1.`3`))}}",
+                      "o": "text:equal",
+                      "b": "{{lower(trim(2.`4`))}}"
+                    },
+                    {
+                      "a": "{{trim(1.`4`)}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{1.`1`}}",
+                      "o": "text:equal",
+                      "b": "Lv.1"
+                    },
+                    {
+                      "a": "{{2.`8`}}",
+                      "o": "number:equal",
+                      "b": 1
+                    },
+                    {
+                      "a": "{{2.`10`}}",
+                      "o": "text:notequal",
+                      "b": "완료"
+                    },
+                    {
+                      "a": "{{trim(1.`6`)}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{trim(1.`7`)}}",
+                      "o": "exist"
+                    }
+                  ]
+                ]
+              }
+            },
+            {
+              "id": 24,
+              "module": "http:ActionSendData",
+              "version": 3,
+              "parameters": {
+                "handleErrors": true,
+                "useNewZLibDeCompress": true
+              },
+              "mapper": {
+                "url": "__DISCORD_WEBHOOK_URL__?wait=true",
+                "serializeUrl": false,
+                "method": "post",
+                "headers": [],
+                "qs": [],
+                "bodyType": "raw",
+                "contentType": "application/json",
+                "data": "{\"username\":\"냉장고 퀘스트 상태창\",\"allowed_mentions\":{\"parse\":[]},\"embeds\":[{\"title\":\"[LEVEL UP] Lv.2 살림 9단 퀘스트 해금\",\"description\":\"**[LEVEL UP] Lv.1 통과!**\\\\n새 레벨: Lv.2 · 살림 9단\\\\n진행도: 1/5\\\\n\\\\n**[NEW QUEST]** 자취요리(라면/볶음밥 등)를 나만의 방식으로 업그레이드\\\\n**인증 링크** __MISSION_FORM_PREFILL_BASE_URL__\\\\n\\\\n🌿 “늘 먹던 음식도 손끝 하나 바꾸면 새 맛이 나는 법이지.”\",\"color\":6262651,\"fields\":[{\"name\":\"플레이어\",\"value\":\"{{2.`3`}}\",\"inline\":true},{\"name\":\"참가자ID\",\"value\":\"{{2.`0`}}\",\"inline\":true}],\"footer\":{\"text\":\"냉장고 파먹기 레벨업 챌린지 · 상태창 70% + 할머니 손맛 30%\"}}]}",
+                "parseResponse": true,
+                "authUser": "",
+                "authPass": "",
+                "timeout": "40",
+                "shareCookies": false,
+                "ca": "",
+                "rejectUnauthorized": true,
+                "followRedirect": true,
+                "useQuerystring": false,
+                "gzip": true,
+                "useMtls": false,
+                "followAllRedirects": false
+              },
+              "metadata": {
+                "designer": {
+                  "x": 950,
+                  "y": 310,
+                  "name": "Discord Lv.2 안내"
+                },
+                "notes": "Discord Incoming Webhook JSON Embed. allowed_mentions.parse=[] 유지. Webhook URL은 배포 전 안전하게 주입하세요."
+              }
+            },
+            {
+              "id": 124,
+              "module": "google-sheets:updateRow",
+              "version": 2,
+              "parameters": {
+                "__IMTCONN__": 0,
+                "mode": "select",
+                "from": "drive",
+                "spreadsheetId": "/__SPREADSHEET_ID_FROM_CONFIG__",
+                "sheetId": "__SHEET_ID_TRACKER__",
+                "includesHeaders": true,
+                "tableFirstRow": "A1:AZ1",
+                "valueRenderOption": "FORMATTED_VALUE",
+                "dateTimeRenderOption": "FORMATTED_STRING"
+              },
+              "mapper": {
+                "rowNumber": "{{2.`__ROW_NUMBER__`}}",
+                "values": {
+                  "36": "성공",
+                  "26": "{{now}}",
+                  "27": "{{addDays(now; 5)}}"
+                },
+                "valueInputOption": "USER_ENTERED"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1250,
+                  "y": 310,
+                  "name": "Lv.2 Discord 발송 완료 갱신"
+                },
+                "notes": "가져오기 후 레벨업트래커의 Discord최근발송상태(0-based index 36)와 행 번호를 UI에서 다시 선택하세요."
+              }
+            }
+          ]
+        },
+        {
+          "flow": [
+            {
+              "id": 26,
+              "module": "google-sheets:updateRow",
+              "version": 2,
+              "parameters": {
+                "__IMTCONN__": 0,
+                "mode": "select",
+                "from": "drive",
+                "spreadsheetId": "/__SPREADSHEET_ID_FROM_CONFIG__",
+                "sheetId": "__SHEET_ID_TRACKER__",
+                "includesHeaders": true,
+                "tableFirstRow": "A1:AZ1",
+                "valueRenderOption": "FORMATTED_VALUE",
+                "dateTimeRenderOption": "FORMATTED_STRING"
+              },
+              "mapper": {
+                "rowNumber": "{{2.`__ROW_NUMBER__`}}",
+                "values": {
+                  "13": "완료",
+                  "14": "{{now}}",
+                  "15": "SUB-{{1.`2`}}-L2-{{1.`__ROW_NUMBER__`}}",
+                  "28": "N",
+                  "29": "",
+                  "30": "EVT-{{formatDate(now; \"YYYYMMDDHHmmss\"; \"Asia/Seoul\")}}-{{1.`2`}}-PASS_L2",
+                  "37": "건너뜀",
+                  "8": "3",
+                  "9": "집밥 마스터",
+                  "16": "진행중",
+                  "36": "대기"
+                },
+                "valueInputOption": "USER_ENTERED"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 650,
+                  "y": 460,
+                  "name": "Lv.2 완료 및 트래커 갱신"
+                },
+                "notes": "가져오기 후 레벨업트래커 탭과 행 번호, 갱신 열을 UI에서 다시 선택하세요. 지정하지 않은 열은 보존되는지 Run once로 확인하세요."
+              },
+              "filter": {
+                "name": "통과: Lv.2 공통/필수값 검증 완료",
+                "conditions": [
+                  [
+                    {
+                      "a": "{{2.`__ROW_NUMBER__`}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{lower(trim(1.`3`))}}",
+                      "o": "text:equal",
+                      "b": "{{lower(trim(2.`4`))}}"
+                    },
+                    {
+                      "a": "{{trim(1.`4`)}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{1.`1`}}",
+                      "o": "text:equal",
+                      "b": "Lv.2"
+                    },
+                    {
+                      "a": "{{2.`8`}}",
+                      "o": "number:equal",
+                      "b": 2
+                    },
+                    {
+                      "a": "{{2.`13`}}",
+                      "o": "text:notequal",
+                      "b": "완료"
+                    },
+                    {
+                      "a": "{{trim(1.`8`)}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{trim(1.`9`)}}",
+                      "o": "exist"
+                    }
+                  ]
+                ]
+              }
+            },
+            {
+              "id": 27,
+              "module": "http:ActionSendData",
+              "version": 3,
+              "parameters": {
+                "handleErrors": true,
+                "useNewZLibDeCompress": true
+              },
+              "mapper": {
+                "url": "__DISCORD_WEBHOOK_URL__?wait=true",
+                "serializeUrl": false,
+                "method": "post",
+                "headers": [],
+                "qs": [],
+                "bodyType": "raw",
+                "contentType": "application/json",
+                "data": "{\"username\":\"냉장고 퀘스트 상태창\",\"allowed_mentions\":{\"parse\":[]},\"embeds\":[{\"title\":\"[LEVEL UP] Lv.3 집밥 마스터 퀘스트 해금\",\"description\":\"**[LEVEL UP] Lv.2 통과!**\\\\n새 레벨: Lv.3 · 집밥 마스터\\\\n진행도: 2/5\\\\n\\\\n**[NEW QUEST]** 메인요리 + 반찬 2개 이상으로 한 상 차리기\\\\n**인증 링크** __MISSION_FORM_PREFILL_BASE_URL__\\\\n\\\\n🌿 “한 상에는 맛도 담기고, 차린 사람의 마음도 담긴단다.”\",\"color\":6262651,\"fields\":[{\"name\":\"플레이어\",\"value\":\"{{2.`3`}}\",\"inline\":true},{\"name\":\"참가자ID\",\"value\":\"{{2.`0`}}\",\"inline\":true}],\"footer\":{\"text\":\"냉장고 파먹기 레벨업 챌린지 · 상태창 70% + 할머니 손맛 30%\"}}]}",
+                "parseResponse": true,
+                "authUser": "",
+                "authPass": "",
+                "timeout": "40",
+                "shareCookies": false,
+                "ca": "",
+                "rejectUnauthorized": true,
+                "followRedirect": true,
+                "useQuerystring": false,
+                "gzip": true,
+                "useMtls": false,
+                "followAllRedirects": false
+              },
+              "metadata": {
+                "designer": {
+                  "x": 950,
+                  "y": 460,
+                  "name": "Discord Lv.3 안내"
+                },
+                "notes": "Discord Incoming Webhook JSON Embed. allowed_mentions.parse=[] 유지. Webhook URL은 배포 전 안전하게 주입하세요."
+              }
+            },
+            {
+              "id": 127,
+              "module": "google-sheets:updateRow",
+              "version": 2,
+              "parameters": {
+                "__IMTCONN__": 0,
+                "mode": "select",
+                "from": "drive",
+                "spreadsheetId": "/__SPREADSHEET_ID_FROM_CONFIG__",
+                "sheetId": "__SHEET_ID_TRACKER__",
+                "includesHeaders": true,
+                "tableFirstRow": "A1:AZ1",
+                "valueRenderOption": "FORMATTED_VALUE",
+                "dateTimeRenderOption": "FORMATTED_STRING"
+              },
+              "mapper": {
+                "rowNumber": "{{2.`__ROW_NUMBER__`}}",
+                "values": {
+                  "36": "성공",
+                  "26": "{{now}}",
+                  "27": "{{addDays(now; 5)}}"
+                },
+                "valueInputOption": "USER_ENTERED"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1250,
+                  "y": 460,
+                  "name": "Lv.3 Discord 발송 완료 갱신"
+                },
+                "notes": "가져오기 후 레벨업트래커의 Discord최근발송상태(0-based index 36)와 행 번호를 UI에서 다시 선택하세요."
+              }
+            }
+          ]
+        },
+        {
+          "flow": [
+            {
+              "id": 29,
+              "module": "google-sheets:updateRow",
+              "version": 2,
+              "parameters": {
+                "__IMTCONN__": 0,
+                "mode": "select",
+                "from": "drive",
+                "spreadsheetId": "/__SPREADSHEET_ID_FROM_CONFIG__",
+                "sheetId": "__SHEET_ID_TRACKER__",
+                "includesHeaders": true,
+                "tableFirstRow": "A1:AZ1",
+                "valueRenderOption": "FORMATTED_VALUE",
+                "dateTimeRenderOption": "FORMATTED_STRING"
+              },
+              "mapper": {
+                "rowNumber": "{{2.`__ROW_NUMBER__`}}",
+                "values": {
+                  "16": "완료",
+                  "17": "{{now}}",
+                  "18": "SUB-{{1.`2`}}-L3-{{1.`__ROW_NUMBER__`}}",
+                  "28": "N",
+                  "29": "",
+                  "30": "EVT-{{formatDate(now; \"YYYYMMDDHHmmss\"; \"Asia/Seoul\")}}-{{1.`2`}}-PASS_L3",
+                  "37": "건너뜀",
+                  "8": "4",
+                  "9": "창작 셰프",
+                  "19": "진행중",
+                  "36": "대기"
+                },
+                "valueInputOption": "USER_ENTERED"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 650,
+                  "y": 610,
+                  "name": "Lv.3 완료 및 트래커 갱신"
+                },
+                "notes": "가져오기 후 레벨업트래커 탭과 행 번호, 갱신 열을 UI에서 다시 선택하세요. 지정하지 않은 열은 보존되는지 Run once로 확인하세요."
+              },
+              "filter": {
+                "name": "통과: Lv.3 공통/필수값 검증 완료",
+                "conditions": [
+                  [
+                    {
+                      "a": "{{2.`__ROW_NUMBER__`}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{lower(trim(1.`3`))}}",
+                      "o": "text:equal",
+                      "b": "{{lower(trim(2.`4`))}}"
+                    },
+                    {
+                      "a": "{{trim(1.`4`)}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{1.`1`}}",
+                      "o": "text:equal",
+                      "b": "Lv.3"
+                    },
+                    {
+                      "a": "{{2.`8`}}",
+                      "o": "number:equal",
+                      "b": 3
+                    },
+                    {
+                      "a": "{{2.`16`}}",
+                      "o": "text:notequal",
+                      "b": "완료"
+                    },
+                    {
+                      "a": "{{trim(1.`10`)}}",
+                      "o": "exist"
+                    }
+                  ]
+                ]
+              }
+            },
+            {
+              "id": 30,
+              "module": "http:ActionSendData",
+              "version": 3,
+              "parameters": {
+                "handleErrors": true,
+                "useNewZLibDeCompress": true
+              },
+              "mapper": {
+                "url": "__DISCORD_WEBHOOK_URL__?wait=true",
+                "serializeUrl": false,
+                "method": "post",
+                "headers": [],
+                "qs": [],
+                "bodyType": "raw",
+                "contentType": "application/json",
+                "data": "{\"username\":\"냉장고 퀘스트 상태창\",\"allowed_mentions\":{\"parse\":[]},\"embeds\":[{\"title\":\"[LEVEL UP] Lv.4 창작 셰프 퀘스트 해금\",\"description\":\"**[LEVEL UP] Lv.3 통과!**\\\\n새 레벨: Lv.4 · 창작 셰프\\\\n진행도: 3/5\\\\n\\\\n**[NEW QUEST]** 기존 레시피를 응용한 나만의 창작 요리\\\\n**인증 링크** __MISSION_FORM_PREFILL_BASE_URL__\\\\n\\\\n🌿 “레시피는 길잡이란다. 마지막 맛은 네 손으로 완성해 보렴.”\",\"color\":6262651,\"fields\":[{\"name\":\"플레이어\",\"value\":\"{{2.`3`}}\",\"inline\":true},{\"name\":\"참가자ID\",\"value\":\"{{2.`0`}}\",\"inline\":true}],\"footer\":{\"text\":\"냉장고 파먹기 레벨업 챌린지 · 상태창 70% + 할머니 손맛 30%\"}}]}",
+                "parseResponse": true,
+                "authUser": "",
+                "authPass": "",
+                "timeout": "40",
+                "shareCookies": false,
+                "ca": "",
+                "rejectUnauthorized": true,
+                "followRedirect": true,
+                "useQuerystring": false,
+                "gzip": true,
+                "useMtls": false,
+                "followAllRedirects": false
+              },
+              "metadata": {
+                "designer": {
+                  "x": 950,
+                  "y": 610,
+                  "name": "Discord Lv.4 안내"
+                },
+                "notes": "Discord Incoming Webhook JSON Embed. allowed_mentions.parse=[] 유지. Webhook URL은 배포 전 안전하게 주입하세요."
+              }
+            },
+            {
+              "id": 130,
+              "module": "google-sheets:updateRow",
+              "version": 2,
+              "parameters": {
+                "__IMTCONN__": 0,
+                "mode": "select",
+                "from": "drive",
+                "spreadsheetId": "/__SPREADSHEET_ID_FROM_CONFIG__",
+                "sheetId": "__SHEET_ID_TRACKER__",
+                "includesHeaders": true,
+                "tableFirstRow": "A1:AZ1",
+                "valueRenderOption": "FORMATTED_VALUE",
+                "dateTimeRenderOption": "FORMATTED_STRING"
+              },
+              "mapper": {
+                "rowNumber": "{{2.`__ROW_NUMBER__`}}",
+                "values": {
+                  "36": "성공",
+                  "26": "{{now}}",
+                  "27": "{{addDays(now; 5)}}"
+                },
+                "valueInputOption": "USER_ENTERED"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1250,
+                  "y": 610,
+                  "name": "Lv.4 Discord 발송 완료 갱신"
+                },
+                "notes": "가져오기 후 레벨업트래커의 Discord최근발송상태(0-based index 36)와 행 번호를 UI에서 다시 선택하세요."
+              }
+            }
+          ]
+        },
+        {
+          "flow": [
+            {
+              "id": 32,
+              "module": "google-sheets:updateRow",
+              "version": 2,
+              "parameters": {
+                "__IMTCONN__": 0,
+                "mode": "select",
+                "from": "drive",
+                "spreadsheetId": "/__SPREADSHEET_ID_FROM_CONFIG__",
+                "sheetId": "__SHEET_ID_TRACKER__",
+                "includesHeaders": true,
+                "tableFirstRow": "A1:AZ1",
+                "valueRenderOption": "FORMATTED_VALUE",
+                "dateTimeRenderOption": "FORMATTED_STRING"
+              },
+              "mapper": {
+                "rowNumber": "{{2.`__ROW_NUMBER__`}}",
+                "values": {
+                  "19": "완료",
+                  "20": "{{now}}",
+                  "21": "SUB-{{1.`2`}}-L4-{{1.`__ROW_NUMBER__`}}",
+                  "28": "N",
+                  "29": "",
+                  "30": "EVT-{{formatDate(now; \"YYYYMMDDHHmmss\"; \"Asia/Seoul\")}}-{{1.`2`}}-PASS_L4",
+                  "37": "건너뜀",
+                  "8": "5",
+                  "9": "전설의 요리사",
+                  "22": "진행중",
+                  "36": "대기"
+                },
+                "valueInputOption": "USER_ENTERED"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 650,
+                  "y": 760,
+                  "name": "Lv.4 완료 및 트래커 갱신"
+                },
+                "notes": "가져오기 후 레벨업트래커 탭과 행 번호, 갱신 열을 UI에서 다시 선택하세요. 지정하지 않은 열은 보존되는지 Run once로 확인하세요."
+              },
+              "filter": {
+                "name": "통과: Lv.4 공통/필수값 검증 완료",
+                "conditions": [
+                  [
+                    {
+                      "a": "{{2.`__ROW_NUMBER__`}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{lower(trim(1.`3`))}}",
+                      "o": "text:equal",
+                      "b": "{{lower(trim(2.`4`))}}"
+                    },
+                    {
+                      "a": "{{trim(1.`4`)}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{1.`1`}}",
+                      "o": "text:equal",
+                      "b": "Lv.4"
+                    },
+                    {
+                      "a": "{{2.`8`}}",
+                      "o": "number:equal",
+                      "b": 4
+                    },
+                    {
+                      "a": "{{2.`19`}}",
+                      "o": "text:notequal",
+                      "b": "완료"
+                    },
+                    {
+                      "a": "{{trim(1.`11`)}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{trim(1.`12`)}}",
+                      "o": "exist"
+                    }
+                  ]
+                ]
+              }
+            },
+            {
+              "id": 33,
+              "module": "http:ActionSendData",
+              "version": 3,
+              "parameters": {
+                "handleErrors": true,
+                "useNewZLibDeCompress": true
+              },
+              "mapper": {
+                "url": "__DISCORD_WEBHOOK_URL__?wait=true",
+                "serializeUrl": false,
+                "method": "post",
+                "headers": [],
+                "qs": [],
+                "bodyType": "raw",
+                "contentType": "application/json",
+                "data": "{\"username\":\"냉장고 퀘스트 상태창\",\"allowed_mentions\":{\"parse\":[]},\"embeds\":[{\"title\":\"[LEVEL UP] Lv.5 전설의 요리사 퀘스트 해금\",\"description\":\"**[LEVEL UP] Lv.4 통과!**\\\\n새 레벨: Lv.5 · 전설의 요리사\\\\n진행도: 4/5\\\\n\\\\n**[NEW QUEST]** “인생 한 끼” — 가장 자신 있는 요리로 마무리\\\\n**인증 링크** __MISSION_FORM_PREFILL_BASE_URL__\\\\n\\\\n🌿 “제일 자신 있는 한 끼에는 네 이야기를 듬뿍 담아 보렴.”\",\"color\":6262651,\"fields\":[{\"name\":\"플레이어\",\"value\":\"{{2.`3`}}\",\"inline\":true},{\"name\":\"참가자ID\",\"value\":\"{{2.`0`}}\",\"inline\":true}],\"footer\":{\"text\":\"냉장고 파먹기 레벨업 챌린지 · 상태창 70% + 할머니 손맛 30%\"}}]}",
+                "parseResponse": true,
+                "authUser": "",
+                "authPass": "",
+                "timeout": "40",
+                "shareCookies": false,
+                "ca": "",
+                "rejectUnauthorized": true,
+                "followRedirect": true,
+                "useQuerystring": false,
+                "gzip": true,
+                "useMtls": false,
+                "followAllRedirects": false
+              },
+              "metadata": {
+                "designer": {
+                  "x": 950,
+                  "y": 760,
+                  "name": "Discord Lv.5 안내"
+                },
+                "notes": "Discord Incoming Webhook JSON Embed. allowed_mentions.parse=[] 유지. Webhook URL은 배포 전 안전하게 주입하세요."
+              }
+            },
+            {
+              "id": 133,
+              "module": "google-sheets:updateRow",
+              "version": 2,
+              "parameters": {
+                "__IMTCONN__": 0,
+                "mode": "select",
+                "from": "drive",
+                "spreadsheetId": "/__SPREADSHEET_ID_FROM_CONFIG__",
+                "sheetId": "__SHEET_ID_TRACKER__",
+                "includesHeaders": true,
+                "tableFirstRow": "A1:AZ1",
+                "valueRenderOption": "FORMATTED_VALUE",
+                "dateTimeRenderOption": "FORMATTED_STRING"
+              },
+              "mapper": {
+                "rowNumber": "{{2.`__ROW_NUMBER__`}}",
+                "values": {
+                  "36": "성공",
+                  "26": "{{now}}",
+                  "27": "{{addDays(now; 5)}}"
+                },
+                "valueInputOption": "USER_ENTERED"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1250,
+                  "y": 760,
+                  "name": "Lv.5 Discord 발송 완료 갱신"
+                },
+                "notes": "가져오기 후 레벨업트래커의 Discord최근발송상태(0-based index 36)와 행 번호를 UI에서 다시 선택하세요."
+              }
+            }
+          ]
+        },
+        {
+          "flow": [
+            {
+              "id": 35,
+              "module": "google-sheets:updateRow",
+              "version": 2,
+              "parameters": {
+                "__IMTCONN__": 0,
+                "mode": "select",
+                "from": "drive",
+                "spreadsheetId": "/__SPREADSHEET_ID_FROM_CONFIG__",
+                "sheetId": "__SHEET_ID_TRACKER__",
+                "includesHeaders": true,
+                "tableFirstRow": "A1:AZ1",
+                "valueRenderOption": "FORMATTED_VALUE",
+                "dateTimeRenderOption": "FORMATTED_STRING"
+              },
+              "mapper": {
+                "rowNumber": "{{2.`__ROW_NUMBER__`}}",
+                "values": {
+                  "22": "완료",
+                  "23": "{{now}}",
+                  "24": "SUB-{{1.`2`}}-L5-{{1.`__ROW_NUMBER__`}}",
+                  "28": "Y",
+                  "29": "",
+                  "30": "EVT-{{formatDate(now; \"YYYYMMDDHHmmss\"; \"Asia/Seoul\")}}-{{1.`2`}}-PASS_L5",
+                  "37": "건너뜀",
+                  "25": "완료",
+                  "26": "",
+                  "27": "",
+                  "36": "대기",
+                  "31": "미발급"
+                },
+                "valueInputOption": "USER_ENTERED"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 650,
+                  "y": 910,
+                  "name": "Lv.5 완료 및 인증서 발급 대기 기록"
+                },
+                "notes": "Lv.5 완료와 전체완료여부=완료를 기록합니다. 인증서 생성·Discord PDF 첨부·Drive 링크 fallback은 Apps Script issuePendingCertificates 시간 트리거가 전담합니다. 가져오기 후 행 번호와 갱신 열을 UI에서 다시 선택하세요."
+              },
+              "filter": {
+                "name": "통과: Lv.5 공통/필수값 검증 완료",
+                "conditions": [
+                  [
+                    {
+                      "a": "{{2.`__ROW_NUMBER__`}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{lower(trim(1.`3`))}}",
+                      "o": "text:equal",
+                      "b": "{{lower(trim(2.`4`))}}"
+                    },
+                    {
+                      "a": "{{trim(1.`4`)}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{1.`1`}}",
+                      "o": "text:equal",
+                      "b": "Lv.5"
+                    },
+                    {
+                      "a": "{{2.`8`}}",
+                      "o": "number:equal",
+                      "b": 5
+                    },
+                    {
+                      "a": "{{2.`22`}}",
+                      "o": "text:notequal",
+                      "b": "완료"
+                    },
+                    {
+                      "a": "{{trim(1.`13`)}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{trim(1.`14`)}}",
+                      "o": "exist"
+                    }
+                  ]
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "flow": [
+            {
+              "id": 50,
+              "module": "http:ActionSendData",
+              "version": 3,
+              "parameters": {
+                "handleErrors": true,
+                "useNewZLibDeCompress": true
+              },
+              "mapper": {
+                "url": "__DISCORD_WEBHOOK_URL__?wait=true",
+                "serializeUrl": false,
+                "method": "post",
+                "headers": [],
+                "qs": [],
+                "bodyType": "raw",
+                "contentType": "application/json",
+                "data": "{\"username\":\"냉장고 퀘스트 상태창\",\"allowed_mentions\":{\"parse\":[]},\"embeds\":[{\"title\":\"[ERROR] 필수 설명을 보완해 주세요\",\"description\":\"사진 또는 레벨별 필수 설명이 부족합니다. 현재 진행 기록은 유지됩니다.\\\\n다시 인증: __MISSION_FORM_PREFILL_BASE_URL__\",\"color\":12082232,\"fields\":[{\"name\":\"플레이어\",\"value\":\"{{2.`3`}}\",\"inline\":true},{\"name\":\"참가자ID\",\"value\":\"{{2.`0`}}\",\"inline\":true}],\"footer\":{\"text\":\"냉장고 파먹기 레벨업 챌린지 · 상태창 70% + 할머니 손맛 30%\"}}]}",
+                "parseResponse": true,
+                "authUser": "",
+                "authPass": "",
+                "timeout": "40",
+                "shareCookies": false,
+                "ca": "",
+                "rejectUnauthorized": true,
+                "followRedirect": true,
+                "useQuerystring": false,
+                "gzip": true,
+                "useMtls": false,
+                "followAllRedirects": false
+              },
+              "metadata": {
+                "designer": {
+                  "x": 650,
+                  "y": 1040,
+                  "name": "Discord 오류 안내: 필수 설명 누락"
+                },
+                "notes": "Discord Incoming Webhook JSON Embed. allowed_mentions.parse=[] 유지. Webhook URL은 배포 전 안전하게 주입하세요."
+              },
+              "filter": {
+                "name": "오류: 레벨별 필수 설명 누락",
+                "conditions": [
+                  [
+                    {
+                      "a": "{{2.`__ROW_NUMBER__`}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{lower(trim(1.`3`))}}",
+                      "o": "text:equal",
+                      "b": "{{lower(trim(2.`4`))}}"
+                    },
+                    {
+                      "a": "{{trim(1.`4`)}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{1.`1`}}",
+                      "o": "text:equal",
+                      "b": "Lv.1"
+                    },
+                    {
+                      "a": "{{2.`8`}}",
+                      "o": "number:equal",
+                      "b": 1
+                    },
+                    {
+                      "a": "{{2.`10`}}",
+                      "o": "text:notequal",
+                      "b": "완료"
+                    },
+                    {
+                      "a": "{{trim(1.`6`)}}",
+                      "o": "notexist"
+                    }
+                  ],
+                  [
+                    {
+                      "a": "{{2.`__ROW_NUMBER__`}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{lower(trim(1.`3`))}}",
+                      "o": "text:equal",
+                      "b": "{{lower(trim(2.`4`))}}"
+                    },
+                    {
+                      "a": "{{trim(1.`4`)}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{1.`1`}}",
+                      "o": "text:equal",
+                      "b": "Lv.1"
+                    },
+                    {
+                      "a": "{{2.`8`}}",
+                      "o": "number:equal",
+                      "b": 1
+                    },
+                    {
+                      "a": "{{2.`10`}}",
+                      "o": "text:notequal",
+                      "b": "완료"
+                    },
+                    {
+                      "a": "{{trim(1.`7`)}}",
+                      "o": "notexist"
+                    }
+                  ],
+                  [
+                    {
+                      "a": "{{2.`__ROW_NUMBER__`}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{lower(trim(1.`3`))}}",
+                      "o": "text:equal",
+                      "b": "{{lower(trim(2.`4`))}}"
+                    },
+                    {
+                      "a": "{{trim(1.`4`)}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{1.`1`}}",
+                      "o": "text:equal",
+                      "b": "Lv.2"
+                    },
+                    {
+                      "a": "{{2.`8`}}",
+                      "o": "number:equal",
+                      "b": 2
+                    },
+                    {
+                      "a": "{{2.`13`}}",
+                      "o": "text:notequal",
+                      "b": "완료"
+                    },
+                    {
+                      "a": "{{trim(1.`8`)}}",
+                      "o": "notexist"
+                    }
+                  ],
+                  [
+                    {
+                      "a": "{{2.`__ROW_NUMBER__`}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{lower(trim(1.`3`))}}",
+                      "o": "text:equal",
+                      "b": "{{lower(trim(2.`4`))}}"
+                    },
+                    {
+                      "a": "{{trim(1.`4`)}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{1.`1`}}",
+                      "o": "text:equal",
+                      "b": "Lv.2"
+                    },
+                    {
+                      "a": "{{2.`8`}}",
+                      "o": "number:equal",
+                      "b": 2
+                    },
+                    {
+                      "a": "{{2.`13`}}",
+                      "o": "text:notequal",
+                      "b": "완료"
+                    },
+                    {
+                      "a": "{{trim(1.`9`)}}",
+                      "o": "notexist"
+                    }
+                  ],
+                  [
+                    {
+                      "a": "{{2.`__ROW_NUMBER__`}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{lower(trim(1.`3`))}}",
+                      "o": "text:equal",
+                      "b": "{{lower(trim(2.`4`))}}"
+                    },
+                    {
+                      "a": "{{trim(1.`4`)}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{1.`1`}}",
+                      "o": "text:equal",
+                      "b": "Lv.3"
+                    },
+                    {
+                      "a": "{{2.`8`}}",
+                      "o": "number:equal",
+                      "b": 3
+                    },
+                    {
+                      "a": "{{2.`16`}}",
+                      "o": "text:notequal",
+                      "b": "완료"
+                    },
+                    {
+                      "a": "{{trim(1.`10`)}}",
+                      "o": "notexist"
+                    }
+                  ],
+                  [
+                    {
+                      "a": "{{2.`__ROW_NUMBER__`}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{lower(trim(1.`3`))}}",
+                      "o": "text:equal",
+                      "b": "{{lower(trim(2.`4`))}}"
+                    },
+                    {
+                      "a": "{{trim(1.`4`)}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{1.`1`}}",
+                      "o": "text:equal",
+                      "b": "Lv.4"
+                    },
+                    {
+                      "a": "{{2.`8`}}",
+                      "o": "number:equal",
+                      "b": 4
+                    },
+                    {
+                      "a": "{{2.`19`}}",
+                      "o": "text:notequal",
+                      "b": "완료"
+                    },
+                    {
+                      "a": "{{trim(1.`11`)}}",
+                      "o": "notexist"
+                    }
+                  ],
+                  [
+                    {
+                      "a": "{{2.`__ROW_NUMBER__`}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{lower(trim(1.`3`))}}",
+                      "o": "text:equal",
+                      "b": "{{lower(trim(2.`4`))}}"
+                    },
+                    {
+                      "a": "{{trim(1.`4`)}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{1.`1`}}",
+                      "o": "text:equal",
+                      "b": "Lv.4"
+                    },
+                    {
+                      "a": "{{2.`8`}}",
+                      "o": "number:equal",
+                      "b": 4
+                    },
+                    {
+                      "a": "{{2.`19`}}",
+                      "o": "text:notequal",
+                      "b": "완료"
+                    },
+                    {
+                      "a": "{{trim(1.`12`)}}",
+                      "o": "notexist"
+                    }
+                  ],
+                  [
+                    {
+                      "a": "{{2.`__ROW_NUMBER__`}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{lower(trim(1.`3`))}}",
+                      "o": "text:equal",
+                      "b": "{{lower(trim(2.`4`))}}"
+                    },
+                    {
+                      "a": "{{trim(1.`4`)}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{1.`1`}}",
+                      "o": "text:equal",
+                      "b": "Lv.5"
+                    },
+                    {
+                      "a": "{{2.`8`}}",
+                      "o": "number:equal",
+                      "b": 5
+                    },
+                    {
+                      "a": "{{2.`22`}}",
+                      "o": "text:notequal",
+                      "b": "완료"
+                    },
+                    {
+                      "a": "{{trim(1.`13`)}}",
+                      "o": "notexist"
+                    }
+                  ],
+                  [
+                    {
+                      "a": "{{2.`__ROW_NUMBER__`}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{lower(trim(1.`3`))}}",
+                      "o": "text:equal",
+                      "b": "{{lower(trim(2.`4`))}}"
+                    },
+                    {
+                      "a": "{{trim(1.`4`)}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{1.`1`}}",
+                      "o": "text:equal",
+                      "b": "Lv.5"
+                    },
+                    {
+                      "a": "{{2.`8`}}",
+                      "o": "number:equal",
+                      "b": 5
+                    },
+                    {
+                      "a": "{{2.`22`}}",
+                      "o": "text:notequal",
+                      "b": "완료"
+                    },
+                    {
+                      "a": "{{trim(1.`14`)}}",
+                      "o": "notexist"
+                    }
+                  ]
+                ]
+              }
+            },
+            {
+              "id": 150,
+              "module": "google-sheets:updateRow",
+              "version": 2,
+              "parameters": {
+                "__IMTCONN__": 0,
+                "mode": "select",
+                "from": "drive",
+                "spreadsheetId": "/__SPREADSHEET_ID_FROM_CONFIG__",
+                "sheetId": "__SHEET_ID_TRACKER__",
+                "includesHeaders": true,
+                "tableFirstRow": "A1:AZ1",
+                "valueRenderOption": "FORMATTED_VALUE",
+                "dateTimeRenderOption": "FORMATTED_STRING"
+              },
+              "mapper": {
+                "rowNumber": "{{2.`__ROW_NUMBER__`}}",
+                "values": {
+                  "36": "성공"
+                },
+                "valueInputOption": "USER_ENTERED"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 950,
+                  "y": 1040,
+                  "name": "오류/안내 Discord 상태 갱신"
+                },
+                "notes": "가져오기 후 레벨업트래커의 Discord최근발송상태(0-based index 36)와 행 번호를 UI에서 다시 선택하세요."
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "instant": false,
+    "version": 1,
+    "scenario": {
+      "roundtrips": 1,
+      "maxErrors": 3,
+      "autoCommit": true,
+      "autoCommitTriggerLast": true,
+      "sequential": true,
+      "slots": 1,
+      "confidential": false,
+      "dataloss": false,
+      "dlq": false,
+      "freshVariables": false
+    },
+    "designer": {
+      "orphans": []
+    },
+    "zone": "eu2.make.com",
+    "notes": [
+      "조립형 Discord Blueprint: Discord 알림은 HTTP Make a request(http:ActionSendData v3)로 구성했습니다.",
+      "모든 공개 메시지는 JSON Embed이며 allowed_mentions.parse=[]입니다. 참가자 식별 정보는 챌린지닉네임과 참가자ID만 표시합니다.",
+      "Lv.1~Lv.5 Router 통과 경로를 유지하며, Lv.5는 완료/인증서 대기 상태만 기록합니다. PDF 생성·multipart payload_json+files[0] 첨부·Drive fallback은 Apps Script issuePendingCertificates가 담당합니다.",
+      "중요: 이 Blueprint 자체에는 운영로그 멱등키 Search/Create 모듈이 없습니다. 상태열·상호 배타 필터·sequential=true·slots=1만으로는 트리거 재전달/상태 갱신 전 실패 시 중복 Discord 전송을 완전히 막지 못합니다.",
+      "원 요구의 엄격한 멱등키 기준을 충족하려면 활성화 전에 각 이벤트의 JOIN|..., PASS|{참가자ID}|L{레벨}, REMIND|{참가자ID}|L{레벨}|D5 키를 운영로그에서 원자적으로 선점·조회·완료 기록하는 모듈을 추가해야 합니다.",
+      "Discord 429 retry_after/Retry-After 및 5xx 제한 재시도는 Blueprint JSON에 구현되어 있지 않으므로, 활성화 전에 각 HTTP 모듈의 Make Error Handler에서 최대 3회로 구성하고 Run once로 검증해야 합니다.",
+      "Search Rows 0건에서도 참가자 미확인 경로가 실행되도록 empty result/continue 옵션을 켜세요."
+    ],
+    "assemblyBlueprint": true,
+    "idempotencyGuarantee": "NOT_MET_UNTIL_OPERATION_LOG_CLAIM_MODULES_ADDED",
+    "requiredPostImportAction": "Google Sheets/HTTP 모듈의 동적 열과 __DISCORD_WEBHOOK_URL__을 재매핑하고, 운영로그 멱등키 원자 선점/완료 모듈 및 HTTP 429/5xx 최대 3회 Error Handler를 추가한 뒤 모든 경로를 Run once로 검증"
+  },
+  "scheduling": {
+    "type": "indefinitely",
+    "interval": 60,
+    "enabled": false
+  }
+}

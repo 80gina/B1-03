@@ -1,0 +1,246 @@
+{
+  "package": "냉장고 파먹기 레벨업 챌린지 — Discord Webhook 1채널 Make Blueprint 3종",
+  "generatedAt": "2026-07-26",
+  "blueprintFormat": "Make scenario blueprint JSON (name/flow/metadata/scheduling)",
+  "deliveryChannel": {
+    "type": "Discord Incoming Webhook",
+    "channelCount": 1,
+    "webhookPlaceholder": "__DISCORD_WEBHOOK_URL__",
+    "waitQuery": true
+  },
+  "securityNotice": [
+    "Blueprint에는 실제 Discord Webhook URL을 넣지 않았으며 __DISCORD_WEBHOOK_URL__ placeholder만 포함합니다.",
+    "권장: Make Team/Organization Custom Variable 또는 비밀 관리 가능한 Connection/변수에 Webhook URL을 저장하고 HTTP 모듈 URL에 매핑합니다.",
+    "모듈에 직접 입력해야 한다면 공유 화면·실행 로그의 URL 노출을 제한하고, Blueprint 재내보내기 전에 실제 URL이 JSON에 포함되는지 검사한 뒤 반드시 placeholder로 치환하세요.",
+    "Webhook URL이 유출되면 Discord에서 기존 Webhook을 삭제/회전하고 Make의 저장값을 갱신하세요.",
+    "모든 메시지에 allowed_mentions.parse=[]를 유지하여 @everyone/@role/@user 자동 멘션을 차단합니다."
+  ],
+  "privacy": {
+    "publicIdentityFields": [
+      "챌린지닉네임",
+      "참가자ID"
+    ],
+    "prohibitedPublicFields": [
+      "이름",
+      "이메일주소",
+      "휴대전화번호",
+      "카카오수신동의"
+    ],
+    "note": "필터와 내부 시트 조회에는 이메일을 사용할 수 있으나 Discord payload에는 매핑하지 않습니다."
+  },
+  "globalPlaceholders": [
+    {
+      "token": "0 in google-sheets parameters.__IMTCONN__",
+      "meaning": "Google Sheets 연결",
+      "action": "각 Sheets 모듈에서 본인 Google 연결 선택"
+    },
+    {
+      "token": "/__SPREADSHEET_ID_FROM_CONFIG__",
+      "source": "CONFIG!SPREADSHEET_ID",
+      "action": "운영 DB를 다시 선택"
+    },
+    {
+      "token": "__SHEET_ID_JOIN_RESPONSE__",
+      "source": "CONFIG!JOIN_RESPONSE_SHEET_ID",
+      "sheetName": "참가신청_응답"
+    },
+    {
+      "token": "__SHEET_ID_MISSION_RESPONSE__",
+      "source": "CONFIG!MISSION_RESPONSE_SHEET_ID",
+      "sheetName": "미션인증_응답"
+    },
+    {
+      "token": "__SHEET_ID_TRACKER__",
+      "source": "운영 DB",
+      "sheetName": "레벨업트래커"
+    },
+    {
+      "token": "__MISSION_FORM_PREFILL_BASE_URL__",
+      "source": "CONFIG!MISSION_FORM_PUBLISHED_URL + entry ID",
+      "action": "참가자ID·이메일·레벨 사전작성 URL로 교체"
+    },
+    {
+      "token": "__DISCORD_WEBHOOK_URL__",
+      "source": "Discord 채널 설정 > 연동 > Webhook",
+      "action": "Make 비밀 변수/Connection 또는 안전한 모듈 입력으로 주입"
+    },
+    {
+      "token": "__ROW_NUMBER__",
+      "meaning": "Make Sheets 모듈 행 번호 출력",
+      "action": "가져오기 후 Row number 동적 토큰 재선택"
+    }
+  ],
+  "files": {
+    "01_signup_welcome.blueprint.json": {
+      "scenario": "SCN-01_참가신청_Discord웰컴",
+      "scheduleDefault": "OFF",
+      "sequential": true,
+      "concurrencySlots": 1,
+      "events": [
+        "신규 참가 웰컴 + Lv.1",
+        "중복 신청 안내"
+      ],
+      "remap": [
+        "참가신청_응답 Watch Rows",
+        "레벨업트래커 Search/Add/Update",
+        "Discord HTTP JSON Embed 2개",
+        "Discord최근발송상태 index 36"
+      ]
+    },
+    "02_mission_levelup.blueprint.json": {
+      "scenario": "SCN-02_미션인증_검증_Discord레벨업_인증서",
+      "scheduleDefault": "OFF",
+      "sequential": true,
+      "concurrencySlots": 1,
+      "routerCoverage": [
+        "참가자 미확인",
+        "이메일 불일치",
+        "사진 누락",
+        "순서 오류",
+        "중복 제출",
+        "Lv.1 통과",
+        "Lv.2 통과",
+        "Lv.3 통과",
+        "Lv.4 통과",
+        "Lv.5 통과",
+        "필수 설명 누락"
+      ],
+      "certificatePath": {
+        "owner": "Apps Script issuePendingCertificates 시간 트리거",
+        "scn02Responsibility": "Lv.5 완료, 전체완료여부=완료, 인증서발급상태=미발급 기록",
+        "appsScriptPrimary": "상태창 Embed + PDF 직접 첨부",
+        "appsScriptFallback": "PDF가 20 MiB를 초과하거나 직접 첨부가 실패하면 Google Drive 링크 Embed",
+        "reason": "Lv.5 행 갱신 직후에는 인증서파일URL이 아직 생성되지 않으므로 SCN-02에서 즉시 다운로드하는 경로를 제거했습니다.",
+        "activationRequirement": "Make 모드에서도 issuePendingCertificates를 시간 기반 트리거로 별도 설치해야 합니다. installStandaloneTriggers는 사용하지 않습니다."
+      },
+      "remap": [
+        "미션인증_응답 Watch Rows",
+        "레벨업트래커 Search/Update",
+        "Router 모든 필터",
+        "모든 Discord HTTP 모듈",
+        "Lv.5 완료 시 인증서발급상태 index 31=미발급",
+        "Discord최근발송상태 index 36"
+      ]
+    },
+    "03_reminder.blueprint.json": {
+      "scenario": "SCN-03_5일미제출_Discord리마인드",
+      "scheduleDefault": "OFF",
+      "sequential": true,
+      "concurrencySlots": 1,
+      "scheduleAfterTest": "매일 09:00 Asia/Seoul",
+      "events": [
+        "5일 미제출 리마인드"
+      ],
+      "remap": [
+        "레벨업트래커 Search Rows",
+        "리마인드 필터",
+        "Discord HTTP JSON Embed",
+        "Discord최근발송상태 index 36"
+      ]
+    }
+  },
+  "sheetCompatibility": {
+    "appsScriptContract": "Discord용 Apps Script의 레벨업트래커 39열과 동일한 0-based 매핑을 사용합니다.",
+    "레벨업트래커": [
+      "참가자ID",
+      "신청일시",
+      "이름",
+      "챌린지닉네임",
+      "이메일주소",
+      "휴대전화번호",
+      "알림수신채널",
+      "카카오수신동의",
+      "현재레벨",
+      "현재칭호",
+      "Lv1상태",
+      "Lv1완료일시",
+      "Lv1제출ID",
+      "Lv2상태",
+      "Lv2완료일시",
+      "Lv2제출ID",
+      "Lv3상태",
+      "Lv3완료일시",
+      "Lv3제출ID",
+      "Lv4상태",
+      "Lv4완료일시",
+      "Lv4제출ID",
+      "Lv5상태",
+      "Lv5완료일시",
+      "Lv5제출ID",
+      "전체완료여부",
+      "최근미션안내일시",
+      "다음리마인드예정일시",
+      "현재레벨리마인드발송여부",
+      "현재레벨리마인드발송일시",
+      "마지막처리이벤트ID",
+      "인증서발급상태",
+      "인증서ID",
+      "인증서파일URL",
+      "인증서발급일시",
+      "인증서멱등키",
+      "Discord최근발송상태",
+      "카카오최근발송상태",
+      "운영메모"
+    ],
+    "criticalIndices": {
+      "31": "인증서발급상태",
+      "32": "인증서ID",
+      "33": "인증서파일URL",
+      "36": "Discord최근발송상태",
+      "37": "카카오최근발송상태",
+      "38": "운영메모"
+    },
+    "migration": "기존 메일 채널 발송상태 열은 Discord최근발송상태로 이름을 변경하거나 Discord용 Apps Script가 만든 새 DB/헤더를 사용하세요."
+  },
+  "makeReliabilityGate": {
+    "strictIdempotencyRequirement": "FAIL_AS_DELIVERED",
+    "reason": "세 Blueprint에는 운영로그 멱등키의 원자 선점/조회/완료 기록 모듈이 없으며 상태열·필터·sequential=true·slots=1에 의존합니다. 전송 성공 뒤 상태 갱신 전 실패하거나 Watch Rows가 재전달되면 중복 Discord 게시 가능성이 남습니다.",
+    "requiredBeforeActivation": [
+      "JOIN|..., PASS|{참가자ID}|L{레벨}, REMIND|{참가자ID}|L{레벨}|D5 멱등키를 운영로그에 원자적으로 선점",
+      "이미 처리중/성공인 키는 Discord HTTP 전송 전에 차단",
+      "Discord 성공 후 완료 상태 기록, 최종 실패 후 재시도 가능 상태 기록",
+      "각 HTTP 모듈에 429 retry_after/Retry-After 및 5xx 지수형 최대 3회 Error Handler 구성"
+    ],
+    "activationPolicy": "위 항목을 Make UI에서 구현하고 실전 Run once로 증명하기 전에는 scheduling.enabled=false 유지"
+  },
+  "discordPayloadContract": {
+    "jsonEvents": [
+      "웰컴",
+      "중복",
+      "Lv.1~Lv.4 통과/다음 레벨",
+      "검증 오류",
+      "5일 리마인드",
+      "인증서 Drive fallback"
+    ],
+    "multipartEvent": "Apps Script issuePendingCertificates가 Lv.5 인증서 PDF 직접 첨부",
+    "requiredKeys": [
+      "embeds",
+      "allowed_mentions.parse=[]"
+    ],
+    "embedLimits": "title 256, description 4096, fields 25, 전체 embed 문자 6000 이하",
+    "rateLimit": "wait=true로 메시지 객체를 받고 HTTP 429의 retry_after/Retry-After를 존중하여 Make 오류 처리 재시도 설정"
+  },
+  "moduleVersions": {
+    "google-sheets:watchRows": 2,
+    "google-sheets:searchRows": 2,
+    "google-sheets:addRow": 2,
+    "google-sheets:updateRow": 2,
+    "builtin:BasicRouter": 1,
+    "http:ActionSendData": 3,
+    "http:ActionGetFile": 3
+  },
+  "sourceReferences": [
+    "https://docs.discord.com/developers/resources/webhook",
+    "https://docs.discord.com/developers/resources/message#uploading-files",
+    "https://docs.discord.com/developers/resources/message#embed-object",
+    "https://docs.discord.com/developers/topics/rate-limits"
+  ],
+  "activationGate": [
+    "세 시나리오 모두 scheduling.enabled=false인지 확인",
+    "metadata.scenario.sequential=true 및 slots=1 확인",
+    "실제 Webhook URL 주입 후 Blueprint를 외부 공유하거나 재내보내지 않기",
+    "Run once로 웰컴/오류/Lv.1~Lv.5/리마인드를 테스트하고, issuePendingCertificates 수동 실행으로 인증서 직접첨부와 Drive fallback을 테스트",
+    "Discord 메시지에 실명·이메일·전화번호가 없는지 실제 채널에서 확인",
+    "성공 후에만 Discord최근발송상태=성공이 기록되는지 확인"
+  ]
+}
