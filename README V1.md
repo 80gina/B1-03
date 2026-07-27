@@ -207,7 +207,7 @@ Make 화면에 나오는 낱말들을 쉬운 말로 바꿔 봤어요. 이것만 
 
 🍳 [Lv.1 미션 — 초보 요리사]
 냉장고 속 재료 3가지로 요리 1개를 완성해 주세요.
-👉 인증하러 가기: (Lv.1 미션 인증 폼 링크)
+👉 인증하러 가기: ([Lv.1 미션 인증 폼 링크](https://docs.google.com/forms/d/e/1FAIpQLSftDWmJhzuiy1gzT3FW2LbG0GXOC88LYo4QHgkv12RDfA11nw/viewform?usp=sharing&ouid=105650697046041270124))
 ```
 
 **② 레벨업 축하 메시지 (#미션달성 — 시나리오 2, Lv.1~4 경로용)**
@@ -218,7 +218,7 @@ Make 화면에 나오는 낱말들을 쉬운 말로 바꿔 봤어요. 이것만 
 
 🍚 [다음 미션 — Lv.{다음레벨}]
 {다음 미션 내용}
-👉 인증하러 가기: (다음 레벨 미션 인증 폼 링크)
+👉 인증하러 가기: ([다음 레벨 미션 인증 폼 링크](https://docs.google.com/forms/d/e/1FAIpQLSftDWmJhzuiy1gzT3FW2LbG0GXOC88LYo4QHgkv12RDfA11nw/viewform?usp=sharing&ouid=105650697046041270124))
 ```
 
 **③ 사진 재제출 요청 (#미션달성 — 시나리오 2, 필터 탈락 경로)**
@@ -226,7 +226,7 @@ Make 화면에 나오는 낱말들을 쉬운 말로 바꿔 봤어요. 이것만 
 ```
 📷 앗! {디스코드닉네임} 님, 인증 사진이 안 보여요.
 요리 사진을 꼭 첨부해서 다시 제출해 주세요. 진행 상황은 그대로 남아 있으니 걱정 마세요!
-👉 다시 제출하기: (미션 인증 폼 링크)
+👉 다시 제출하기: ([미션 인증 폼 링크](https://docs.google.com/forms/d/e/1FAIpQLSftDWmJhzuiy1gzT3FW2LbG0GXOC88LYo4QHgkv12RDfA11nw/viewform?usp=sharing&ouid=105650697046041270124))
 ```
 
 **④ 최종 인증서 + 초대장 (#인증서-발급 — 시나리오 3)**
